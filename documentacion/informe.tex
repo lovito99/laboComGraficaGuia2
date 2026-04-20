@@ -1,0 +1,469 @@
+\documentclass[12pt,a4paper]{article}
+
+% ── Codificación y lenguaje ──────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+
+% ── Márgenes ────────────────────────────────────────────────────────────────
+\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, right=2.5cm]{geometry}
+
+% ── Tipografía y formato ─────────────────────────────────────────────────────
+\usepackage{times}
+\usepackage{setspace}
+\usepackage{parskip}
+\setlength{\parindent}{0pt}
+
+% ── Gráficos y colores ───────────────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{float}
+
+% ── Código fuente ────────────────────────────────────────────────────────────
+\usepackage{listings}
+\lstset{
+  language=C++,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{gray}\itshape,
+  stringstyle=\color{red!70!black},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  frame=single,
+  breaklines=true,
+  tabsize=4,
+  captionpos=b,
+  showstringspaces=false,
+  backgroundcolor=\color{gray!8},
+}
+
+% ── Matemáticas ──────────────────────────────────────────────────────────────
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% ── Tablas ───────────────────────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+
+% ── Cabecera y pie de página ─────────────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Computación Gráfica I -- Práctica N° 2}
+\fancyhead[R]{\small UNSAAC}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Hipervínculos ────────────────────────────────────────────────────────────
+\usepackage[hidelinks]{hyperref}
+
+% ════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% ── Portada ──────────────────────────────────────────────────────────────────
+\begin{titlepage}
+  \centering
+  \vspace*{0.5cm}
+
+  {\large \textbf{Universidad Nacional de San Antonio Abad del Cusco}}\\[0.3cm]
+  {\normalsize Facultad de Ingeniería Eléctrica, Electrónica, Informática y Mecánica}\\[0.1cm]
+  {\normalsize Departamento Académico de Ingeniería Informática y de Sistemas}\\[1.5cm]
+
+  \rule{\linewidth}{0.5mm}\\[0.4cm]
+  {\LARGE \textbf{COMPUTACIÓN GRÁFICA I}}\\[0.3cm]
+  {\Large \textbf{Práctica N° 2}}\\[0.2cm]
+  {\large \textbf{Algoritmos para Trazo de Líneas}}\\[0.2cm]
+  \rule{\linewidth}{0.5mm}\\[1.8cm]
+
+  \begin{minipage}{0.48\textwidth}
+    \begin{flushleft}
+      \textbf{Docente:}\\
+      Dr. Hans Harley Ccacyahuillca Bejar
+    \end{flushleft}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.48\textwidth}
+    \begin{flushright}
+      \textbf{Estudiante:}\\
+      Efrain Vitorino Marin\\
+      \textbf{Código:} 160337
+    \end{flushright}
+  \end{minipage}
+
+  \vfill
+  {\normalsize Cusco, \today}
+\end{titlepage}
+
+% ── Tabla de contenidos ───────────────────────────────────────────────────────
+\tableofcontents
+\newpage
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Objetivos}
+
+\begin{itemize}
+  \item Conocer los algoritmos clásicos de trazo de líneas en computación gráfica.
+  \item Comprender la base matemática de cada algoritmo y sus diferencias en eficiencia.
+  \item Implementar los algoritmos de trazo de líneas utilizando OpenGL y GLUT en C++.
+  \item Desarrollar el ejercicio propuesto: dibujar 5 líneas al azar y señalar sus puntos de intersección.
+\end{itemize}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Base Teórica}
+
+\subsection{Ecuación de la Recta}
+
+La ecuación cartesiana de una línea recta es:
+\begin{equation}
+  y = mx + b
+\end{equation}
+
+donde $m$ es la pendiente y $b$ la intersección con el eje $y$. Dados dos puntos
+$(x_1, y_1)$ y $(x_2, y_2)$, se calculan como:
+
+\begin{equation}
+  m = \frac{y_2 - y_1}{x_2 - x_1}, \qquad b = y_1 - m\,x_1
+\end{equation}
+
+Los intervalos incrementales son:
+\begin{equation}
+  \Delta y = m\,\Delta x, \qquad \Delta x = \frac{\Delta y}{m}
+\end{equation}
+
+Si $|m| < 1$ la línea es más horizontal; si $|m| > 1$ es más vertical.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Algoritmo Pendiente-Intersección}
+
+Es el método más directo: para cada valor entero de $x$ se evalúa la ecuación
+$y = mx + b$ y se redondea al entero más cercano.
+
+\textbf{Ventaja:} sencillo de implementar.\\
+\textbf{Desventaja:} requiere una multiplicación y un redondeo flotante en cada paso.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Algoritmo DDA (Digital Differential Analyzer)}
+
+En lugar de evaluar $y = mx + b$ en cada paso, acumula el incremento:
+\begin{equation}
+  y_{k+1} = y_k + m
+\end{equation}
+
+Se evita la multiplicación del bucle, pero aún utiliza aritmética de punto flotante
+y un redondeo por iteración.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Algoritmo de Bresenham}
+
+Trabaja exclusivamente con aritmética entera. Mantiene una variable de error $e$
+que representa dos veces la distancia entre el píxel elegido y la línea ideal.
+En cada paso:
+
+\begin{equation}
+  e \leftarrow e + \Delta y
+\end{equation}
+
+Si $2e \geq \Delta x$, se incrementa $y$ y se corrige el error:
+$e \leftarrow e - \Delta x$.
+
+El algoritmo se generaliza a los 8 octantes mediante:
+\begin{itemize}
+  \item \textbf{Transposición} (\textit{steep}): intercambia $x$ e $y$ cuando $|\Delta y| > |\Delta x|$.
+  \item \textbf{Paso negativo} (\texttt{dy\_step}): permite pendientes negativas.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Algoritmo de Punto Medio}
+
+Variante incremental de enteros para el primer octante ($0 < m \leq 1$).
+Usa una variable de decisión $d_m$ inicializada como:
+\begin{equation}
+  d_m = 2\,\Delta y - \Delta x
+\end{equation}
+
+En cada paso, si $d_m \leq 0$ el punto medio está por debajo de la línea y se
+mantiene $y$; si $d_m > 0$ se incrementa $y$:
+\begin{equation}
+  d_m \leftarrow
+  \begin{cases}
+    d_m + 2\,\Delta y & \text{si } d_m \leq 0\\
+    d_m + 2\,\Delta y - 2\,\Delta x & \text{si } d_m > 0
+  \end{cases}
+\end{equation}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Implementación}
+
+\subsection{Estructura del Proyecto}
+
+\begin{verbatim}
+laboComGraficaGuia2/
+├── algoritmos_lineas.cpp    # Prueba de los 4 algoritmos
+├── ejercicio_propuesto.cpp  # 5 líneas + detección de intersecciones
+├── Makefile
+└── documentacion/
+    └── informe.tex
+\end{verbatim}
+
+\subsection{Función Auxiliar \texttt{plot}}
+
+Todos los algoritmos utilizan la función \texttt{plot(x, y)} que dibuja un
+píxel en las coordenadas enteras indicadas mediante OpenGL:
+
+\begin{lstlisting}[caption={Función plot en OpenGL}]
+void plot(int ix, int iy) {
+    glBegin(GL_POINTS);
+        glVertex2i(ix, iy);
+    glEnd();
+}
+\end{lstlisting}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Algoritmo Pendiente-Intersección}
+
+\begin{lstlisting}[caption={Implementación Pendiente-Intersección}]
+void PendienteInterseccion(int x0, int y0, int x1, int y1) {
+    if (x0 > x1) { std::swap(x0, x1); std::swap(y0, y1); }
+    float m = (float)(y1 - y0) / (x1 - x0);
+    float b = (float)y0 - m * (float)x0;
+    for (int x = x0; x <= x1; x++) {
+        plot(x, (int)roundf(m * (float)x + b));
+    }
+}
+\end{lstlisting}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Algoritmo DDA}
+
+\begin{lstlisting}[caption={Implementación DDA}]
+void DDA(int x0, int y0, int x1, int y1) {
+    if (x0 > x1) { std::swap(x0, x1); std::swap(y0, y1); }
+    float m = (float)(y1 - y0) / (x1 - x0);
+    float y = (float)y0;
+    for (int x = x0; x <= x1; x++) {
+        plot(x, (int)roundf(y));
+        y += m;
+    }
+}
+\end{lstlisting}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Algoritmo de Bresenham}
+
+\begin{lstlisting}[caption={Implementación Bresenham (todos los octantes)}]
+void Bresenham(int x0, int y0, int x1, int y1) {
+    bool steep = std::abs(y1 - y0) > std::abs(x1 - x0);
+    if (steep) { std::swap(x0, y0); std::swap(x1, y1); }
+    if (x0 > x1) { std::swap(x0, x1); std::swap(y0, y1); }
+
+    int dy_step = (y0 < y1) ? 1 : -1;
+    int delta_x = x1 - x0;
+    int delta_y = std::abs(y1 - y0);
+    int y       = y0;
+    int error   = 0;
+
+    for (int x = x0; x <= x1; x++) {
+        if (steep) plot(y, x); else plot(x, y);
+        error += delta_y;
+        if (2 * error >= delta_x) {
+            y     += dy_step;
+            error -= delta_x;
+        }
+    }
+}
+\end{lstlisting}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\subsection{Algoritmo de Punto Medio}
+
+\begin{lstlisting}[caption={Implementación Punto Medio (primer octante)}]
+void PtoMedio(int x0, int y0, int x1, int y1) {
+    int delta_x = x1 - x0;
+    int delta_y = y1 - y0;
+    int dm      = 2 * delta_y - delta_x;
+    int dm_p1   = 2 * delta_y;
+    int dm_p2   = 2 * delta_y - 2 * delta_x;
+    int y       = y0;
+
+    for (int x = x0; x <= x1; x++) {
+        plot(x, y);
+        if (dm <= 0) {
+            dm += dm_p1;
+        } else {
+            dm += dm_p2;
+            y++;
+        }
+    }
+}
+\end{lstlisting}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Ejercicio Propuesto}
+
+\subsection{Descripción}
+
+El ejercicio consiste en:
+\begin{enumerate}
+  \item Dibujar \textbf{5 líneas al azar} usando el algoritmo de Bresenham.
+  \item Calcular y \textbf{señalar todos los puntos de intersección} entre ellas.
+\end{enumerate}
+
+\subsection{Detección de Intersecciones}
+
+Se utiliza la \textbf{forma paramétrica} de dos segmentos:
+\begin{align}
+  P(t) &= A + t\,(B - A), \quad t \in [0,1]\\
+  Q(s) &= C + s\,(D - C), \quad s \in [0,1]
+\end{align}
+
+Igualando $P(t) = Q(s)$ se obtiene el sistema:
+\begin{equation}
+  D = \Delta x_2\,\Delta y_1 - \Delta x_1\,\Delta y_2
+\end{equation}
+\begin{equation}
+  t = \frac{\Delta x_2\,(C_y - A_y) - \Delta y_2\,(C_x - A_x)}{D}, \qquad
+  s = \frac{\Delta x_1\,(C_y - A_y) - \Delta y_1\,(C_x - A_x)}{D}
+\end{equation}
+
+Hay intersección de segmento cuando $D \neq 0$, $t \in [0,1]$ y $s \in [0,1]$.
+Con 5 líneas existen $\binom{5}{2} = 10$ pares posibles a verificar.
+
+\subsection{Implementación de la Detección}
+
+\begin{lstlisting}[caption={Función de intersección paramétrica}]
+bool segmentIntersect(const Line& a, const Line& b, Point2D& pt) {
+    float dx1 = (float)(a.x1 - a.x0), dy1 = (float)(a.y1 - a.y0);
+    float dx2 = (float)(b.x1 - b.x0), dy2 = (float)(b.y1 - b.y0);
+
+    float D = dx2 * dy1 - dx1 * dy2;
+    if (fabsf(D) < 1e-6f) return false;  // paralelos
+
+    float cx = (float)(b.x0 - a.x0);
+    float cy = (float)(b.y0 - a.y0);
+
+    float t = (dx2 * cy - dy2 * cx) / D;
+    float s = (dx1 * cy - dy1 * cx) / D;
+
+    if (t >= 0.0f && t <= 1.0f && s >= 0.0f && s <= 1.0f) {
+        pt.x = (float)a.x0 + t * dx1;
+        pt.y = (float)a.y0 + t * dy1;
+        return true;
+    }
+    return false;
+}
+\end{lstlisting}
+
+\subsection{Líneas Utilizadas}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{ccccc}
+    \toprule
+    \textbf{Línea} & \textbf{x0} & \textbf{y0} & \textbf{x1} & \textbf{y1} \\
+    \midrule
+    0 &  20 & 380 & 490 & 250 \\
+    1 & 100 & 490 & 400 &  10 \\
+    2 &  10 & 140 & 490 & 360 \\
+    3 & 240 & 490 & 310 &  10 \\
+    4 & 480 & 450 &  10 & 170 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Coordenadas de las 5 líneas del ejercicio propuesto}
+\end{table}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Compilación y Ejecución}
+
+\subsection{Dependencias}
+
+\begin{itemize}
+  \item Compilador \texttt{g++} con soporte C++11.
+  \item Librería \texttt{freeglut3-dev} (OpenGL/GLUT).
+\end{itemize}
+
+Instalación en Ubuntu/Debian:
+\begin{verbatim}
+sudo apt install g++ make freeglut3-dev
+\end{verbatim}
+
+\subsection{Comandos}
+
+\begin{verbatim}
+# Compilar ambos programas
+make
+
+# Ejecutar prueba de los 4 algoritmos
+./algoritmos_lineas
+
+# Ejecutar ejercicio propuesto
+./ejercicio_propuesto
+\end{verbatim}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Resultados}
+
+\subsection{Algoritmos de Trazado}
+
+El programa \texttt{algoritmos\_lineas} muestra una ventana de 500×500 px con
+cuatro líneas de prueba, una por cada algoritmo, diferenciadas por color:
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{llll}
+    \toprule
+    \textbf{Color}  & \textbf{Algoritmo}        & \textbf{Tipo aritmética} & \textbf{Octantes} \\
+    \midrule
+    Rojo            & Pendiente-Intersección    & Flotante                 & 1° -- 4°          \\
+    Azul            & DDA                       & Flotante (incremental)   & 1° -- 4°          \\
+    Verde           & Bresenham                 & Entera                   & Todos             \\
+    Magenta         & Punto Medio               & Entera (incremental)     & 1°                \\
+    \bottomrule
+  \end{tabular}
+  \caption{Comparación de los algoritmos implementados}
+\end{table}
+
+\subsection{Ejercicio Propuesto}
+
+El programa \texttt{ejercicio\_propuesto} muestra las 5 líneas en azul y marca
+los puntos de intersección con cuadrados rojos de $9\times9$ px.
+
+% ════════════════════════════════════════════════════════════════════════════
+\section{Conclusiones}
+
+\begin{enumerate}
+  \item El algoritmo de \textbf{Pendiente-Intersección} es el más intuitivo pero
+        el menos eficiente al requerir una multiplicación flotante por píxel.
+
+  \item El \textbf{DDA} mejora la eficiencia al reemplazar la multiplicación por
+        una suma acumulativa, aunque sigue dependiendo de aritmética flotante.
+
+  \item \textbf{Bresenham} es el algoritmo más eficiente al usar solo sumas y
+        restas enteras. Además, su versión generalizada cubre todos los octantes,
+        lo que lo hace el más robusto de los tres.
+
+  \item El \textbf{Punto Medio} ofrece la misma eficiencia entera que Bresenham
+        pero en su forma básica se restringe al primer octante, requiriendo
+        transformaciones adicionales para generalizarse.
+
+  \item La detección de intersecciones mediante la forma paramétrica es precisa
+        y eficiente, evaluando exactamente los 10 pares posibles entre 5 segmentos.
+\end{enumerate}
+
+% ════════════════════════════════════════════════════════════════════════════
+\section*{Bibliografía}
+\addcontentsline{toc}{section}{Bibliografía}
+
+\begin{itemize}
+  \item Donald Hearn, M. Pauline Baker; \textit{Gráficas por Computadora con OpenGL};
+        Pearson Prentice Hall; 3° edición; Madrid 2006.
+
+  \item Rimon Elias; \textit{Digital Media: A Problem-Solving Approach for Computer
+        Graphics}; eBook. New York.
+
+  \item Sumanta Guha; \textit{Computer Graphics Through OpenGL}; Third Edition;
+        Taylor \& Francis Group. 2019.
+\end{itemize}
+
+\end{document}
